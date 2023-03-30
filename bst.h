@@ -234,6 +234,9 @@ public:
     Value& operator[](const Key& key);
     Value const & operator[](const Key& key) const;
 
+    //DELETE THIS
+    //virtual void pubswap(Key k1, Key k2);
+
 protected:
     // Mandatory helper functions
     Node<Key, Value>* internalFind(const Key& k) const; // TODO
@@ -248,7 +251,9 @@ protected:
 
     // Add helper functions here
     virtual void del(Node<Key, Value>* cur);
-    virtual int balance(Node<Key, Value>* cur);
+    virtual bool balance(const Node<Key, Value>* cur) const ;
+    virtual void removeNode(Node<Key, Value>* n);
+    virtual int height(const Node<Key,Value>* a) const ;
 
 protected:
     Node<Key, Value>* root_;
@@ -481,7 +486,7 @@ template<class Key, class Value>
 void BinarySearchTree<Key, Value>::insert(const std::pair<const Key, Value> &keyValuePair)
 {
     // TODO
-    std::cout << "inserting " << keyValuePair.first << std::endl;
+    //std::cout << "inserting " << keyValuePair.first << std::endl;
 
     if (root_ == nullptr){
         root_ = new Node<Key, Value>(keyValuePair.first, keyValuePair.second, nullptr);
@@ -559,122 +564,83 @@ void BinarySearchTree<Key, Value>::insert(const std::pair<const Key, Value> &key
 template<typename Key, typename Value>
 void BinarySearchTree<Key, Value>::remove(const Key& key) {
     // TODO
-    if (internalFind(key) == nullptr) {
+    Node<Key, Value>* find = internalFind(key);
+    //Case 1: Not found
+    if(find == nullptr){
+        std::cout << "Not Found " << std::endl;
         return;
     }
 
-    //NOTE:: COME BACK AND FINISH
-    std::cout << "Come back and finish!" << std::endl;
+    //Parent:
+    Node<Key, Value>* parent = find->getParent();
+    Node<Key, Value>* pred = predecessor(find);
+    std::cout << "Parent: " << parent << " Predecessor: " << pred << std:: endl;//Good to here
+
+    //Swaps
+    if (find->getRight()!=nullptr && find->getLeft()!=nullptr){
+        std::cout << "pred swap" << std::endl;
+        nodeSwap(find, predecessor(find));
+    }
+    while(find->getRight()!=nullptr || find->getLeft()!=nullptr) {
+        if (find->getRight() != nullptr) {
+            std::cout << "Right swap" << std::endl;
+            nodeSwap(find, find->getRight());
+        } else if (find->getLeft() != nullptr) {
+            std::cout << "Left swap" << std::endl;
+            nodeSwap(find, find->getLeft());
+        }
+    }
+    //print();
+    std::cout << root_->getKey() << std::endl;
+
+    //Update Root
+    Node<Key, Value>* temp = find;
+    while(temp->getParent() != nullptr){
+        temp = temp->getParent();
+    }
+    root_ = temp;
+    std::cout << "Root: " << root_ << " value: " << root_->getKey() << std::endl;
+
+    //Delete
+    Node<Key, Value>* next = nullptr;
+    if (find->getLeft()!=nullptr){
+        next = find->getLeft();
+    } else if (find->getRight()!=nullptr){
+        next = find->getRight();
+    }
+
+    parent = find->getParent();
+    if (parent != nullptr){
+        if (parent->getLeft() == find){
+            parent->setLeft(next);
+        }
+        else if (parent->getRight() == find){
+            parent->setRight(next);
+        }
+    }
+
     /*
-    Node<Key, Value> *cur = internalFind(key);
-    cur->getParent()->setRight(cur->getRight());
-    cur->getParent()->setLeft(cur->getLeft());
-    cur->getRight()->setParent(cur->getParent());
-    cur->getLeft()->setParent(cur->getParent());
-    delete cur;
-     */
-    Node<Key, Value>* cur = internalFind(key);
-    Node<Key, Value>* pred = predecessor(cur);
-    Node<Key, Value>* par = cur->getParent();
-    if (cur->getRight() == nullptr && cur->getLeft() == nullptr){
-
-        //Set parent
-        if(par!=nullptr && par->getLeft() == cur){
-            par->setLeft(nullptr);
-        }
-        else if(par!=nullptr && par->getRight() == cur){
-            par->setRight(nullptr);
-        }
-
-        //Set root
-        if (root_ == cur) root_ = nullptr;
-
-        delete cur;
-        return;
+    std::cout << "at the end: " <<std::endl;
+    std::cout <<"Parent: " << parent;
+    std::cout <<"parent L: " << parent->getLeft()<< "Parent R" << parent->getRight() << std:: endl;
+    std::cout <<"Next: " << next << "Next L: " << next->getLeft()<< "Next R" << next->getRight() << std:: endl;
+    std::cout <<"Find: " << find << "Find L: " << find->getLeft()<< "find R" << find->getRight() << std:: endl;
+    */
+    if (root_ == find){
+        root_ = nullptr;
     }
+     delete find;
 
-    if (cur->getRight() == nullptr){
-        if(par!=nullptr && par->getLeft() == cur){
-            par->setLeft(cur->getLeft());
-        }
-        else if(par!=nullptr && par->getRight() == cur){
-            par->setRight(cur->getLeft());
-        }
+    print();
+}
 
-        if (root_ == cur) root_ = cur->getLeft();
+template<class Key, class Value>
+void BinarySearchTree<Key, Value>::removeNode(Node<Key,Value>* n){
+    //Function for removal of a Node with a single child
 
-        cur->getLeft()->setParent(par);
-        delete cur;
-        return;
-    }
-    else if (cur->getLeft() == nullptr){
-        if(par!=nullptr && par->getLeft() == cur){
-            par->setLeft(cur->getRight());
-        }
-        else if(par!=nullptr && par->getRight() == cur){
-            par->setRight(cur->getRight());
-        }
+    Node<Key,Value>* par = n->getParent();
+    if(par==nullptr){
 
-        if (root_ == cur) root_ = cur->getRight();
-
-        cur->getRight()->setParent(par);
-        delete cur;
-        return;
-    }
-
-    //Might be wrong, check if it is
-    else{
-        nodeSwap(cur, pred);
-        remove(cur->getKey());
-
-
-        /*
-        if (cur->getRight() == nullptr && cur->getLeft() == nullptr){
-
-            //Set parent
-            if(par!=nullptr && par->getLeft() == cur){
-                par->setLeft(nullptr);
-            }
-            else if(par!=nullptr && par->getRight() == cur){
-                par->setRight(nullptr);
-            }
-
-            //Set root
-            if (root_ == cur) root_ = nullptr;
-
-            delete cur;
-            return;
-        }
-
-        if (cur->getRight() == nullptr){
-            if(par!=nullptr && par->getLeft() == cur){
-                par->setLeft(cur->getLeft());
-            }
-            else if(par!=nullptr && par->getRight() == cur){
-                par->setRight(cur->getLeft());
-            }
-
-            if (root_ == cur) root_ = cur->getLeft();
-
-            cur->getLeft()->setParent(par);
-            delete cur;
-            return;
-        }
-        else if (cur->getLeft() == nullptr){
-            if(par!=nullptr && par->getLeft() == cur){
-                par->setLeft(cur->getRight());
-            }
-            else if(par!=nullptr && par->getRight() == cur){
-                par->setRight(cur->getRight());
-            }
-
-            if (root_ == cur) root_ = cur->getRight();
-
-            cur->getRight()->setParent(par);
-            delete cur;
-            return;
-        }
-         */
     }
 }
 
@@ -823,26 +789,46 @@ template<typename Key, typename Value>
 bool BinarySearchTree<Key, Value>::isBalanced() const
 {
     // TODO
-    return true;
-
-    /*
-    int val = BinarySearchTree<Key,Value>::balance(root_);
-    //int val = balance(root_);
-    if (val == 0 || val == 1 || val == -1){
-        return true;
-    }
-    else return false;
-     */
+    return balance(root_);
 }
 
 template<typename Key, typename Value>
-int BinarySearchTree<Key, Value>::balance(Node<Key, Value> *cur) {
-    if(cur == nullptr) return 1;
-    return (balance(cur->getRight()) - balance(cur->getLeft()));
+bool BinarySearchTree<Key, Value>::balance(const Node<Key, Value> *cur) const {
+
+    if (cur == nullptr) return true;
+
+    int l = height(cur->getLeft());
+    int r = height(cur->getRight());
+    int hbal = l - r;
+
+    if (hbal >= -1 && hbal <= 1 && balance(cur->getLeft()) && balance(cur->getRight())){
+        return true;
+    }
+    return false;
 }
 
+template<typename Key, typename Value>
+int BinarySearchTree<Key, Value>::height(const Node<Key, Value> *a) const {
+    if (a == nullptr) return 0;
+    int l = height(a->getLeft());
+    int r = height(a->getRight());
 
+    if (l > r){
+        return 1 + l;
+    }
+    else {
+        return 1 + r;
+    }
+}
 
+/*
+template<typename Key, typename Value>
+void BinarySearchTree<Key, Value>::pubswap(Key k1, Key k2) {
+    Node<Key,Value>* a = internalFind(k1);
+    Node<Key,Value>* b = internalFind(k2);
+    nodeSwap(a, b);
+}
+ */
 
 template<typename Key, typename Value>
 void BinarySearchTree<Key, Value>::nodeSwap( Node<Key,Value>* n1, Node<Key,Value>* n2)

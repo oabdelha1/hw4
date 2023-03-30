@@ -40,14 +40,13 @@ int main(int argc, char *argv[])
     }
 
     BinarySearchTree<int, double> bst;
-    bst.insert(std::make_pair(2, 1.0));
-    bst.print();
     bst.insert(std::make_pair(1, 1.0));
-    bst.print();
+    bst.insert(std::make_pair(2, 1.0));
     bst.insert(std::make_pair(3, 1.0));
     bst.print();
-    bst.remove(2);
+    bst.remove(1);
     bst.print();
+
 
     // AVL Tree Tests
 
